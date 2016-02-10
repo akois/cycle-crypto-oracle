@@ -1,0 +1,58 @@
+SyntaxError: D:/Work/My/Research/cycle-crypto-oracle/src/main.js: Unexpected token (106:8)
+[0m  104 | 		  button[94m[1m([22m[39m[31m'.start_decrypt'[39m[1m,[22m [32m{[39mdisabled[1m:[22m [1m![22mcipher_state[32m}[39m[1m,[22m [31m'Start'[39m[94m[1m)[22m[39m
+  105 | 		[33m][39m[94m[1m)[22m[39m
+> 106 |       [33m][39m[94m[1m)[22m[39m[1m;[22m
+      |         ^
+  107 | 	  [90m/*for(var i = 0, i < decrypt_cipher.length; i++) [39m
+  108 | [90m	  {[39m
+  109 | [90m		div('.aaa', {style: containerStyle}, [[39m[0m
+    at Parser.pp.raise (D:\Work\My\Research\cycle-crypto-oracle\node_modules\babelify\node_modules\babel-core\node_modules\babylon\lib\parser\location.js:24:13)
+    at Parser.pp.unexpected (D:\Work\My\Research\cycle-crypto-oracle\node_modules\babelify\node_modules\babel-core\node_modules\babylon\lib\parser\util.js:82:8)
+    at Parser.pp.expect (D:\Work\My\Research\cycle-crypto-oracle\node_modules\babelify\node_modules\babel-core\node_modules\babylon\lib\parser\util.js:76:33)
+    at Parser.pp.parseExprList (D:\Work\My\Research\cycle-crypto-oracle\node_modules\babelify\node_modules\babel-core\node_modules\babylon\lib\parser\expression.js:785:12)
+    at Parser.pp.parseSubscripts (D:\Work\My\Research\cycle-crypto-oracle\node_modules\babelify\node_modules\babel-core\node_modules\babylon\lib\parser\expression.js:270:29)
+    at Parser.pp.parseExprSubscripts (D:\Work\My\Research\cycle-crypto-oracle\node_modules\babelify\node_modules\babel-core\node_modules\babylon\lib\parser\expression.js:240:17)
+    at Parser.pp.parseMaybeUnary (D:\Work\My\Research\cycle-crypto-oracle\node_modules\babelify\node_modules\babel-core\node_modules\babylon\lib\parser\expression.js:217:19)
+    at Parser.pp.parseExprOps (D:\Work\My\Research\cycle-crypto-oracle\node_modules\babelify\node_modules\babel-core\node_modules\babylon\lib\parser\expression.js:163:19)
+    at Parser.pp.parseMaybeConditional (D:\Work\My\Research\cycle-crypto-oracle\node_modules\babelify\node_modules\babel-core\node_modules\babylon\lib\parser\expression.js:145:19)
+    at Parser.pp.parseMaybeAssign (D:\Work\My\Research\cycle-crypto-oracle\node_modules\babelify\node_modules\babel-core\node_modules\babylon\lib\parser\expression.js:112:19)
+
+npm ERR! Windows_NT 6.3.9600
+npm ERR! argv "C:\\Program Files (x86)\\nodejs\\node.exe" "C:\\Program Files (x86)\\nodejs\\node_modules\\npm\\bin\\npm-cli.js" "run" "browserify"
+npm ERR! node v4.2.6
+npm ERR! npm  v2.14.12
+npm ERR! code ELIFECYCLE
+npm ERR! example@0.0.0 browserify: `browserify src/main.js -t babelify --outfile dist/main.js`
+npm ERR! Exit status 1
+npm ERR! 
+npm ERR! Failed at the example@0.0.0 browserify script 'browserify src/main.js -t babelify --outfile dist/main.js'.
+npm ERR! This is most likely a problem with the example package,
+npm ERR! not with npm itself.
+npm ERR! Tell the author that this fails on your system:
+npm ERR!     browserify src/main.js -t babelify --outfile dist/main.js
+npm ERR! You can get their info via:
+npm ERR!     npm owner ls example
+npm ERR! There is likely additional logging output above.
+
+npm ERR! Please include the following file with any support request:
+npm ERR!     D:\Work\My\Research\cycle-crypto-oracle\npm-debug.log
+
+npm ERR! Windows_NT 6.3.9600
+npm ERR! argv "C:\\Program Files (x86)\\nodejs\\node.exe" "C:\\Program Files (x86)\\nodejs\\node_modules\\npm\\bin\\npm-cli.js" "start"
+npm ERR! node v4.2.6
+npm ERR! npm  v2.14.12
+npm ERR! code ELIFECYCLE
+npm ERR! example@0.0.0 start: `npm install && npm run browserify && echo 'OPEN index.html IN YOUR BROWSER'`
+npm ERR! Exit status 1
+npm ERR! 
+npm ERR! Failed at the example@0.0.0 start script 'npm install && npm run browserify && echo 'OPEN index.html IN YOUR BROWSER''.
+npm ERR! This is most likely a problem with the example package,
+npm ERR! not with npm itself.
+npm ERR! Tell the author that this fails on your system:
+npm ERR!     npm install && npm run browserify && echo 'OPEN index.html IN YOUR BROWSER'
+npm ERR! You can get their info via:
+npm ERR!     npm owner ls example
+npm ERR! There is likely additional logging output above.
+
+npm ERR! Please include the following file with any support request:
+npm ERR!     D:\Work\My\Research\cycle-crypto-oracle\npm-debug.log
