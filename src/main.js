@@ -53,7 +53,8 @@ function string2hex(str) {
 
 function main(sources) {
 
-   const USERS_URL = 'http://babaj.tales.sen.symantec.com/CryptoService/OracleService.svc/Decrypt?mode=ErrorsInBody&cipher=5665727952616e646f6d495631323334ab30cdf1e3fbc97c41c1e44cb22e33ed40bff4855d03ea9bd4ad8624720be65';
+   const USERS_URL = 'http://babaj.tales.sen.symantec.com/CryptoService/OracleService.svc/Decrypt?mode=ErrorsInBody&cipher=';
+   
  
   //5665727952616e646f6d495631323334ab30cdf1e3fbc97c41c1e44cb22e33ed40bff4855d03ea9bd4ad8624720be657
   //const timer$ = Observable.timer(0, 5000)//.publish();
@@ -84,22 +85,59 @@ function main(sources) {
   function get_candidates (originalIV, cipher, lastIV)
   {
 	//get index
-	var i;
+	if (lastIV == null) lastIV=originalIV;
 	
-	for (i=0; i < 16 && originalIV[i] != lastIV[i]; ++i);
+	var index=0;
 	
-	var acc=zip_blocks ([originalIV, lastIV]);
+	for (index=0; index < 16 && originalIV[index] == lastIV[index]; ++index);
+
+	//if (index===16) index=15;
 	
-	if (i==0) return {completed: true, candidates: []};
+	var zeroBlock=Array.apply(null, Array(16)).map(() => 0);
+	var padBlock=zeroBlock.slice();
+	for (var i=index; i < 16; ++i) padBlock[i]=(16-index);
 	
-	var index=i-1;
+	var acc=zip_blocks ([originalIV, lastIV, padBlock]);
 	
-	var _candidates=[];
+	//padList idx=replicate  (16-idx) 0++ replicate idx (fromIntegral idx)
+	//idxList a idx=replicate (15-idx) 0++[a]++replicate idx 0
+
+	//padList (idx+1)) (idxList a idx) acc iv
+	//newIV=IV ^ pads ^ acc ^ idxl
+
 	
-	return {completed: false, candidates: _candidates};
+	if (index===0) return {completed: true, candidates: [], result: acc, key: hex2string(cipher)};
+	
+	index=index-1;
+	
+	//2..128
+	var _candidates=Array.apply(null, Array(126))
+		.map((_, i) => i+2)
+		.map (char =>{
+			var newPadBlock=zeroBlock.slice();
+			for (var i=index; i < 16; ++i) newPadBlock[i]=(16-index);
+			
+			var newAcc=acc.slice();
+			newAcc[index]=char;
+			
+			return zip_blocks ([originalIV, newAcc, newPadBlock]).concat(cipher);
+		});
+		
+	return {completed: false, candidates: _candidates, result: acc, key: hex2string(cipher)};
   }
    
-  const decrypt_cipher$ = sources.DOM.select('.start_decrypt').events('click')
+   
+   function getCurriedFunction (IV, cipher)
+   {
+		var ivc=IV.slice();
+		var cc=cipher.slice();
+		
+		return function (newIV) {
+				return get_candidates(ivc, cc, newIV);
+			};
+   }
+   
+  const cipherblock_dicrtionary$ = sources.DOM.select('.start_decrypt').events('click')
 	.withLatestFrom (cipher$, (evt,cipher)=>cipher)
 	.map (cipherblock=>{
 	
@@ -112,14 +150,54 @@ function main(sources) {
 			var IV=string2hex(cipherblock.substring (32*i, 32*(i+1)));
 			var cipher=string2hex(cipherStr);
 			
-			cipherBlocks[cipherStr]=function (newIV) {
-				return get_candidates(IV, cipher, newIV);
-			};
+			cipherBlocks[cipherStr]=getCurriedFunction (IV, cipher);
 		}
 		return cipherBlocks;
 	})
-	.startWith({});
+	//.startWith({});
+
+
+	const http_response$ = sources.HTTP
+		.filter(res$ => res$.request.url.indexOf(USERS_URL) === 0)
+		.mergeAll()
+		.filter (res=>res.text.indexOf('Invalid Padding') > 0 || res.text.indexOf('OK') > 0)
+		.map(res => {
+			var idx=res.req.url.indexOf('cipher=');
+			return {IV: res.req.url.substring (idx+7, idx+7+32), cipher: res.req.url.substring (idx+7+32, idx+7+32+32)};
+		})
+
 	
+	const scan_result$=http_response$
+		.startWith (null);
+	
+	const scan_status$=Observable.combineLatest (cipherblock_dicrtionary$, scan_result$,
+		(dict, scan_result)=>{
+			if (scan_result==null)
+				return Object.keys(dict).map (key=>dict[key](null));
+			else
+				return [dict[scan_result.cipher](string2hex(scan_result.IV))];
+		}
+	)
+	.flatMap (status=>Observable.from (status));
+
+
+	const scan_request$=scan_status$
+		.map (status=>status.candidates);
+		
+	const scan_progres$=scan_status$
+		.scan ((acc, status)=>{ //todo rework
+				if (!(status.key===undefined || status.result===undefined))
+					acc[status.key]=hex2string(status.result);
+					
+				return acc;
+			}, ({}))
+		.startWith ({});
+		
+	const httpRequest$=scan_request$
+		.flatMap (candidates=>
+			Observable.from (candidates.map (cipherblock=>{
+				return {url: USERS_URL+hex2string(cipherblock), method: 'GET'};}))
+		);
     /*.scan (seconds=>++seconds, 1)
     //.map(a => {return {url: USERS_URL + String(a), method: 'GET'};})
 
@@ -129,23 +207,23 @@ function main(sources) {
     
  
 
-  const user$ = sources.HTTP
-    .filter(res$ => res$.request.url.indexOf(USERS_URL) === 0)
-    .mergeAll()
-    .map(res => {alert (res.text); return res.text;})
-    .startWith(null);
 
-  const vtree$ = Observable.combineLatest(cipher_state$, running_state$, decrypt_cipher$,
-	  (cipher_state, running_state, decrypt_cipher) =>
+
+  //const action$=
+  
+  const vtree$ = Observable.combineLatest(cipher_state$, running_state$, scan_progres$,
+	  (cipher_state, running_state, progres) =>
       div('.decryption', {style: containerStyle}, [
 		section({style: sectionStyle}, [
 		  label({style: searchLabelStyle}, 'cipher:'),
 		  input('.cipher', {type: 'text', style: inputTextStyle}),
 		  button('.start_decrypt', {disabled: !cipher_state}, 'Start')
-		]),
-        ul({className: 'search-results'}, Object.keys(decrypt_cipher).map(result =>
+		])
+		//,label({style: searchLabelStyle}, http_response)
+		,
+        ul({className: 'search-results'}, Object.keys(progres).map(result =>
           li({className: 'search-result'}, [
-			label({style: searchLabelStyle}, result)
+			label({style: searchLabelStyle}, result+':'+progres[result])
           ])
         ))
 		
@@ -155,7 +233,7 @@ function main(sources) {
 
   return {
     DOM: vtree$,
-    //HTTP: getRandomUser$
+    HTTP: httpRequest$
   };
 }
 
