@@ -62,6 +62,18 @@ function hex2Message (hex)
 	return String.fromCharCode.apply(String, trimMsg);
 }
 
+function zip_blocks (blocks)
+  {
+	var finalBlock=new Array(16);
+	
+	for (var i=0; i < blocks.length; ++i)
+	{
+		for (var j=0; j < 16; ++j)
+			finalBlock[j] ^= blocks[i][j];
+	}
+	return finalBlock;
+  }
+
 
 function main(sources) {
 
@@ -81,19 +93,7 @@ function main(sources) {
   const running_state$=Observable.just (false);
 
   
-  function zip_blocks (blocks)
-  {
-	var finalBlock=new Array(16);
-	
-	for (var i=0; i < blocks.length; ++i)
-	{
-		for (var j=0; j < 16; ++j)
-			finalBlock[j] ^= blocks[i][j];
-	}
-	return finalBlock;
-  }
-
-  
+    
   function get_candidates (originalIV, cipher, lastIV)
   {
 	//get index
